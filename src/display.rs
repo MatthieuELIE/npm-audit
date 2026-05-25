@@ -1,4 +1,5 @@
 use crate::models::{FixAvailable, Via, Vulnerability};
+use colored::Colorize;
 
 pub fn format_fix(fix: &FixAvailable) -> String {
     match fix {
@@ -17,8 +18,8 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
 
     println!(
         "[{}] {} ({})",
-        vuln.severity.as_str().to_uppercase(),
-        vuln.name,
+        vuln.severity.to_colored_string(),
+        vuln.name.as_str().bold(),
         direct
     );
 
