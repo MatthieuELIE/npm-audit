@@ -3,8 +3,8 @@ mod display;
 mod models;
 
 use crate::{
-    display::{print_vulnerability, severity_order},
-    models::{AuditReport, Vulnerability},
+    display::print_vulnerability,
+    models::{AuditReport, Severity, Vulnerability},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut filtered: Vec<&Vulnerability> = report
         .vulnerabilities
         .values()
-        .filter(|v| matches!(v.severity.to_lowercase().as_str(), "high" | "critical"))
+        .filter(|v| matches!(v.severity, Severity::Critical | Severity::High))
         .collect();
 
     let meta = &report.metadata.vulnerabilities;
@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         meta.high, meta.critical, meta.total
     );
 
-    filtered.sort_by_key(|v| severity_order(&v.severity));
+    filtered.sort_by(|a, b| b.severity.cmp(&a.severity));
     for vuln in filtered {
         print_vulnerability(vuln);
     }

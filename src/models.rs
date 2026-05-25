@@ -11,7 +11,7 @@ pub struct AuditReport {
 #[serde(rename_all = "camelCase")]
 pub struct Vulnerability {
     pub name: String,
-    pub severity: String,
+    pub severity: Severity,
     pub is_direct: bool,
     pub via: Vec<Via>,
     effects: Vec<String>,
@@ -54,7 +54,7 @@ pub struct Advisory {
     name: String,
     pub title: String,
     pub url: String,
-    severity: String,
+    severity: Severity,
     range: String,
 }
 
@@ -64,4 +64,26 @@ pub struct Fix {
     pub name: String,
     pub version: String,
     is_sem_ver_major: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
+pub enum Severity {
+    Info,
+    Low,
+    Moderate,
+    High,
+    Critical,
+}
+
+impl Severity {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Severity::Info => "info",
+            Severity::Low => "low",
+            Severity::Moderate => "moderate",
+            Severity::High => "high",
+            Severity::Critical => "critical",
+        }
+    }
 }
