@@ -8,9 +8,8 @@ pub fn run() -> anyhow::Result<AuditReport> {
         .args(["audit", "--json"])
         .output()
         .context("Failed to execute 'npm audit'. Is npm installed and available in your PATH?")?;
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let report: AuditReport = serde_json::from_str(&stdout).context("Output isn't a JSON!")?;
+    let report: AuditReport =
+        serde_json::from_slice(&output.stdout).context("Failed to parse npm audit JSON output")?;
 
     Ok(report)
 }
