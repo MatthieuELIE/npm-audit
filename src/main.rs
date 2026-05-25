@@ -4,7 +4,7 @@ mod models;
 
 use crate::{display::print_vulnerability, models::AuditReport};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> anyhow::Result<()> {
     let report: AuditReport = audit::run()?;
 
     let meta = &report.metadata.vulnerabilities;
