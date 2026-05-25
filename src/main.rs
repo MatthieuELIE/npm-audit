@@ -2,19 +2,10 @@ mod audit;
 mod display;
 mod models;
 
-use crate::{
-    display::print_vulnerability,
-    models::{AuditReport, Severity, Vulnerability},
-};
+use crate::{display::print_vulnerability, models::AuditReport};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let report: AuditReport = audit::run()?;
-
-    let mut filtered: Vec<&Vulnerability> = report
-        .vulnerabilities
-        .values()
-        .filter(|v| matches!(v.severity, Severity::Critical | Severity::High))
-        .collect();
 
     let meta = &report.metadata.vulnerabilities;
     println!(
@@ -22,8 +13,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         meta.high, meta.critical, meta.total
     );
 
-    filtered.sort_by(|a, b| b.severity.cmp(&a.severity));
-    for vuln in filtered {
+    let vulnerabilities = report.sorted_vulnerabilities();
+    for vuln in vulnerabilities {
         print_vulnerability(vuln);
     }
 

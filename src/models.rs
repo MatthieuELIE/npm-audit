@@ -7,6 +7,22 @@ pub struct AuditReport {
     pub metadata: Metadata,
 }
 
+impl AuditReport {
+    pub fn filtered_vulnerabilities(&self) -> Vec<&Vulnerability> {
+        self.vulnerabilities
+            .values()
+            .filter(|v| matches!(v.severity, Severity::Critical | Severity::High))
+            .collect()
+    }
+
+    pub fn sorted_vulnerabilities(&self) -> Vec<&Vulnerability> {
+        let mut filtered = self.filtered_vulnerabilities();
+        filtered.sort_by(|a, b| b.severity.cmp(&a.severity));
+
+        filtered
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vulnerability {
