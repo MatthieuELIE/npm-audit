@@ -1,15 +1,5 @@
 use crate::models::{FixAvailable, Via, Vulnerability};
 
-pub fn severity_order(s: &str) -> u8 {
-    match s {
-        "critical" => 0,
-        "high" => 1,
-        "moderate" => 2,
-        "low" => 3,
-        _ => 4,
-    }
-}
-
 pub fn format_fix(fix: &FixAvailable) -> String {
     match fix {
         FixAvailable::Bool(true) => "npm audit fix".to_string(),
@@ -27,7 +17,7 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
 
     println!(
         "[{}] {} ({})",
-        vuln.severity.to_uppercase(),
+        vuln.severity.as_str().to_uppercase(),
         vuln.name,
         direct
     );
