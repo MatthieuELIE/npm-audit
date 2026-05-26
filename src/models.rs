@@ -29,7 +29,7 @@ impl AuditReport {
 pub struct Vulnerability {
     pub name: String,
     pub severity: Severity,
-    pub is_direct: bool,
+    pub is_direct: DependencyType,
     pub via: Vec<Via>,
     effects: Vec<String>,
     range: String,
@@ -112,5 +112,41 @@ impl Severity {
             Severity::High => text.on_color(Color::Yellow),
             _ => text.on_color(Color::White),
         }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(from = "bool")]
+pub enum DependencyType {
+    Direct,
+    Indirect,
+}
+
+impl DependencyType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            DependencyType::Direct => "direct",
+            DependencyType::Indirect => "indirect",
+        }
+    }
+}
+
+impl From<bool> for DependencyType {
+    fn from(is_direct: bool) -> Self {
+        match is_direct {
+            true => DependencyType::Direct,
+            false => DependencyType::Indirect,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dependency_type_from_bool() {
+        assert_eq!(DependencyType::from(true), DependencyType::Direct);
+        assert_eq!(DependencyType::from(false), DependencyType::Indirect);
     }
 }

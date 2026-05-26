@@ -10,17 +10,11 @@ pub fn format_fix(fix: &FixAvailable) -> String {
 }
 
 pub fn print_vulnerability(vuln: &Vulnerability) {
-    let direct = if vuln.is_direct {
-        "direct"
-    } else {
-        "transitive"
-    };
-
     println!(
         "[{}] {} ({})",
         vuln.severity.to_colored_string(),
         vuln.name.as_str().bold(),
-        direct
+        vuln.is_direct.as_str()
     );
 
     for via in &vuln.via {
