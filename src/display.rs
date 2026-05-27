@@ -1,4 +1,4 @@
-use crate::models::{FixAvailable, Via, Vulnerability};
+use crate::models::{FixAvailable, Metadata, Via, Vulnerability};
 use colored::Colorize;
 
 pub fn format_fix(fix: &FixAvailable) -> String {
@@ -25,17 +25,26 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
     for via in &vuln.via {
         match via {
             Via::Advisory(a) => {
-                println!("  • {} ({})", a.title, a.range.dimmed());
-                println!("    {}", a.url);
+                println!(" ├─ • {} ({})", a.title, a.range.dimmed());
+                println!(" │  └─   {}", a.url);
             }
             Via::Reference(r) => {
-                println!("  • via {}", r);
+                println!(" ├─ • via {}", r);
             }
         }
     }
 
-    println!("  → {}", format_fix(&vuln.fix_available));
+    println!(" └─ → {}", format_fix(&vuln.fix_available));
     println!();
+}
+
+pub fn print_summary(metadata: &Metadata) {
+    let counts = &metadata.vulnerabilities;
+
+    println!(
+        "Found 🔴 {} Critical, 🟠 {} High, 🟡 {} Moderate, 🟢 {} Low, (Total: {})!\n",
+        counts.critical, counts.high, counts.moderate, counts.low, counts.total
+    );
 }
 
 #[cfg(test)]
