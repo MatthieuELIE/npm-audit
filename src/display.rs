@@ -9,18 +9,23 @@ pub fn format_fix(fix: &FixAvailable) -> String {
     }
 }
 
-pub fn print_vulnerability(vuln: &Vulnerability) {
-    println!(
-        "[{}] {} ({})",
+pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
+    format!(
+        "[{}] {} ({}) [{}]",
         vuln.severity.to_colored_string(),
         vuln.name.as_str().bold(),
-        vuln.is_direct.as_str()
-    );
+        vuln.range.dimmed(),
+        vuln.is_direct.as_str().cyan(),
+    )
+}
+
+pub fn print_vulnerability(vuln: &Vulnerability) {
+    println!("{}", format_vulnerability_header(vuln));
 
     for via in &vuln.via {
         match via {
             Via::Advisory(a) => {
-                println!("  • {}", a.title);
+                println!("  • {} ({})", a.title, a.range.dimmed());
                 println!("    {}", a.url);
             }
             Via::Reference(r) => {
@@ -31,4 +36,30 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
 
     println!("  → {}", format_fix(&vuln.fix_available));
     println!();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{DependencyType, Severity};
+
+    #[test]
+    fn test_format_vulnerability_header() {
+        let vuln = Vulnerability {
+            name: "lodash".to_string(),
+            severity: Severity::Critical,
+            is_direct: DependencyType::Direct,
+            via: vec![],
+            effects: vec![],
+            range: ">= 4.0.0".to_string(),
+            fix_available: FixAvailable::Bool(true),
+        };
+
+        let result = format_vulnerability_header(&vuln);
+
+        assert!(result.contains("lodash"));
+        assert!(result.contains("CRITICAL"));
+        assert!(result.contains(">= 4.0.0"));
+        assert!(result.contains("direct"));
+    }
 }

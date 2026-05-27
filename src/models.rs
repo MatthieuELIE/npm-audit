@@ -31,8 +31,8 @@ pub struct Vulnerability {
     pub severity: Severity,
     pub is_direct: DependencyType,
     pub via: Vec<Via>,
-    effects: Vec<String>,
-    range: String,
+    pub effects: Vec<String>,
+    pub range: String,
     pub fix_available: FixAvailable,
 }
 
@@ -72,7 +72,7 @@ pub struct Advisory {
     pub title: String,
     pub url: String,
     severity: Severity,
-    range: String,
+    pub range: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
