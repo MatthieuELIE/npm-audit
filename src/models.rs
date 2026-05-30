@@ -1,3 +1,4 @@
+use clap::ValueEnum;
 use colored::{Color, ColoredString, Colorize};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -9,15 +10,15 @@ pub struct AuditReport {
 }
 
 impl AuditReport {
-    pub fn filtered_vulnerabilities(&self) -> Vec<&Vulnerability> {
+    pub fn filtered_vulnerabilities(&self, min_severity: Option<Severity>) -> Vec<&Vulnerability> {
         self.vulnerabilities
             .values()
-            .filter(|v| matches!(v.severity, Severity::Critical | Severity::High))
+            .filter(|v| v.severity >= min_severity.unwrap_or(Severity::Info))
             .collect()
     }
 
-    pub fn sorted_vulnerabilities(&self) -> Vec<&Vulnerability> {
-        let mut filtered = self.filtered_vulnerabilities();
+    pub fn sorted_vulnerabilities(&self, min_severity: Option<Severity>) -> Vec<&Vulnerability> {
+        let mut filtered = self.filtered_vulnerabilities(min_severity);
         filtered.sort_by(|a, b| a.severity.cmp(&b.severity));
 
         filtered
@@ -36,7 +37,7 @@ pub struct Vulnerability {
     pub fix_available: FixAvailable,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Metadata {
     pub vulnerabilities: VulnCount,
 }
@@ -55,7 +56,7 @@ pub enum FixAvailable {
     Fix(Fix),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub struct VulnCount {
     pub info: u32,
     pub low: u32,
@@ -83,7 +84,7 @@ pub struct Fix {
     is_sem_ver_major: bool,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
     Info,
@@ -109,8 +110,14 @@ impl Severity {
 
         match self {
             Severity::Critical => text.on_color(Color::Red),
-            Severity::High => text.on_color(Color::Yellow),
-            _ => text.on_color(Color::White),
+            Severity::High => text.on_color(Color::TrueColor {
+                r: 255,
+                g: 165,
+                b: 0,
+            }),
+            Severity::Moderate => text.on_color(Color::Yellow),
+            Severity::Low => text.on_color(Color::Green),
+            Severity::Info => text.on_color(Color::Cyan),
         }
     }
 }
@@ -144,9 +151,37 @@ impl From<bool> for DependencyType {
 mod tests {
     use super::*;
 
+    fn create_vuln(name: &str, severity: Severity) -> Vulnerability {
+        Vulnerability {
+            name: name.to_string(),
+            severity,
+            is_direct: DependencyType::Direct,
+            via: vec![],
+            effects: vec![],
+            range: "1.0.0".to_string(),
+            fix_available: FixAvailable::Bool(false),
+        }
+    }
+
     #[test]
     fn test_dependency_type_from_bool() {
         assert_eq!(DependencyType::from(true), DependencyType::Direct);
         assert_eq!(DependencyType::from(false), DependencyType::Indirect);
+    }
+
+    #[test]
+    fn test_filtered_vulnerabilities() {
+        let mut vulns = HashMap::new();
+        vulns.insert("v1".to_string(), create_vuln("v1", Severity::Low));
+        vulns.insert("v2".to_string(), create_vuln("v2", Severity::High));
+        vulns.insert("v3".to_string(), create_vuln("v3", Severity::Critical));
+
+        let report = AuditReport {
+            vulnerabilities: vulns,
+            metadata: Metadata::default(),
+        };
+
+        let result = report.filtered_vulnerabilities(Some(Severity::High));
+        assert_eq!(result.len(), 2)
     }
 }
