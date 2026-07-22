@@ -3,7 +3,7 @@
 A small Rust CLI that wraps `npm audit --json` and renders the results as a
 readable, colored, severity-sorted report instead of raw JSON.
 
-*Built while learning Rust, with Claude Code as a pair-programming assistant.*
+_Built while learning Rust, with Claude Code as a pair-programming assistant._
 
 ## Why
 
