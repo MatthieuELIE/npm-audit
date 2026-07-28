@@ -68,11 +68,8 @@ pub struct VulnCount {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Advisory {
-    source: u64,
-    name: String,
     pub title: String,
     pub url: String,
-    severity: Severity,
     pub range: String,
 }
 
@@ -81,7 +78,6 @@ pub struct Advisory {
 pub struct Fix {
     pub name: String,
     pub version: String,
-    is_sem_ver_major: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, ValueEnum)]

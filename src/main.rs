@@ -10,8 +10,8 @@ use crate::{
 use clap::Parser;
 
 fn main() -> anyhow::Result<()> {
-    let report: AuditReport = audit::run()?;
     let args = Args::parse();
+    let report: AuditReport = audit::run()?;
 
     let vulnerabilities = report.sorted_vulnerabilities(args.severity);
     if vulnerabilities.is_empty() {
