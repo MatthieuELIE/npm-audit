@@ -38,35 +38,51 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
     println!();
 }
 
-pub fn print_summary(counts: &VulnCount, total: Option<u32>) {
-    let total_text = total
-        .map(|n| format!(" out of {n} total"))
-        .unwrap_or_default();
-
-    let severities = [
+pub fn format_summary(counts: &VulnCount, total: Option<u32>) -> String {
+    let summary = [
         ("🔴", "Critical", counts.critical),
         ("🟠", "High", counts.high),
         ("🟡", "Moderate", counts.moderate),
         ("🟢", "Low", counts.low),
-    ];
+    ]
+    .iter()
+    .filter(|(_emoji, _text, count)| *count > 0)
+    .map(|(emoji, text, count)| format!("{} {} {}", emoji, count, text))
+    .collect::<Vec<String>>()
+    .join(", ");
 
-    let result = severities
-        .iter()
-        .filter(|(_emoji, _text, count)| *count > 0)
-        .map(|(emoji, text, count)| format!("{} {} {}", emoji, count, text))
-        .collect::<Vec<String>>()
-        .join(", ");
+    let total_text = total
+        .map(|n| format!(" out of {n} total"))
+        .unwrap_or_default();
 
-    println!(
+    format!(
         "Found {}, (Total: {}{})!\n",
-        result, counts.total, total_text
-    );
+        summary, counts.total, total_text
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::{DependencyType, Severity};
+
+    #[test]
+    fn test_format_summary_filters_zero_severities_and_total_text() {
+        let counts = VulnCount {
+            critical: 1,
+            low: 2,
+            total: 3,
+            ..Default::default()
+        };
+
+        let result = format_summary(&counts, Some(3));
+        let result_without_total_text = format_summary(&counts, None);
+
+        assert!(result.contains("Critical"));
+        assert!(!result.contains("High"));
+        assert!(result.contains("3"));
+        assert!(!result_without_total_text.contains("out of"));
+    }
 
     #[test]
     fn test_format_vulnerability_header() {

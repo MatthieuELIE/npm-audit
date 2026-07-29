@@ -5,7 +5,7 @@ mod models;
 
 use crate::{
     args::Args,
-    display::{print_summary, print_vulnerability},
+    display::{format_summary, print_vulnerability},
     models::{AuditReport, VulnCount},
 };
 use clap::Parser;
@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()> {
             print_vulnerability(vuln);
         }
 
-        print_summary(&counts, total);
+        println!("{}", format_summary(&counts, total));
     }
 
     Ok(())
