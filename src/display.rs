@@ -1,4 +1,4 @@
-use crate::models::{FixAvailable, Metadata, Via, Vulnerability};
+use crate::models::{FixAvailable, Via, VulnCount, Vulnerability};
 use colored::Colorize;
 
 pub fn format_fix(fix: &FixAvailable) -> String {
@@ -38,19 +38,51 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
     println!();
 }
 
-pub fn print_summary(metadata: &Metadata) {
-    let counts = &metadata.vulnerabilities;
+pub fn format_summary(counts: &VulnCount, total: Option<u32>) -> String {
+    let summary = [
+        ("🔴", "Critical", counts.critical),
+        ("🟠", "High", counts.high),
+        ("🟡", "Moderate", counts.moderate),
+        ("🟢", "Low", counts.low),
+    ]
+    .iter()
+    .filter(|(_emoji, _text, count)| *count > 0)
+    .map(|(emoji, text, count)| format!("{} {} {}", emoji, count, text))
+    .collect::<Vec<String>>()
+    .join(", ");
 
-    println!(
-        "Found 🔴 {} Critical, 🟠 {} High, 🟡 {} Moderate, 🟢 {} Low, (Total: {})!\n",
-        counts.critical, counts.high, counts.moderate, counts.low, counts.total
-    );
+    let total_text = total
+        .map(|n| format!(" out of {n} total"))
+        .unwrap_or_default();
+
+    format!(
+        "Found {}, (Total: {}{})!\n",
+        summary, counts.total, total_text
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::{DependencyType, Severity};
+
+    #[test]
+    fn test_format_summary_filters_zero_severities_and_total_text() {
+        let counts = VulnCount {
+            critical: 1,
+            low: 2,
+            total: 3,
+            ..Default::default()
+        };
+
+        let result = format_summary(&counts, Some(3));
+        let result_without_total_text = format_summary(&counts, None);
+
+        assert!(result.contains("Critical"));
+        assert!(!result.contains("High"));
+        assert!(result.contains("3"));
+        assert!(!result_without_total_text.contains("out of"));
+    }
 
     #[test]
     fn test_format_vulnerability_header() {
