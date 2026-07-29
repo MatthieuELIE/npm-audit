@@ -41,19 +41,17 @@ fn run_npm_audit(program: &str) -> anyhow::Result<std::process::Output> {
         .context("Failed to execute 'npm audit'. Is npm installed and available in your PATH?")
 }
 
-pub fn run() -> anyhow::Result<AuditReport> {
-    let output = run_npm_audit("npm")?;
-
-    let report: AuditReport = parse_report(&output.stdout, &output.stderr)?;
-
-    Ok(report)
-}
-
 fn run_npm_outdated(program: &str) -> anyhow::Result<Output> {
     Command::new(program)
         .args(["outdated", "--json"])
         .output()
         .context("Failed to execute 'npm outdated'. Is npm installed and available in your PATH?")
+}
+
+pub fn run() -> anyhow::Result<AuditReport> {
+    let output = run_npm_audit("npm")?;
+
+    parse_report(&output.stdout, &output.stderr)
 }
 
 pub fn run_outdated() -> anyhow::Result<HashMap<String, OutdatedEntry>> {
