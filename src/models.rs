@@ -198,4 +198,18 @@ mod tests {
         let result = report.filtered_vulnerabilities(Some(Severity::High));
         assert_eq!(result.len(), 2)
     }
+
+    #[test]
+    fn test_vuln_count_from_iter() {
+        let vulns = vec![
+            create_vuln("v1", Severity::Low),
+            create_vuln("v2", Severity::Moderate),
+            create_vuln("v3", Severity::Moderate),
+        ];
+
+        let count: VulnCount = vulns.iter().collect();
+        assert_eq!(count.low, 1);
+        assert_eq!(count.moderate, 2);
+        assert_eq!(count.total, 3);
+    }
 }
