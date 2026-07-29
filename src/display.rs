@@ -91,7 +91,6 @@ mod tests {
             severity: Severity::Critical,
             is_direct: DependencyType::Direct,
             via: vec![],
-            effects: vec![],
             range: ">= 4.0.0".to_string(),
             fix_available: FixAvailable::Bool(true),
         };

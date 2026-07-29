@@ -10,14 +10,23 @@ fn parse_report(stdout: &[u8], stderr: &[u8]) -> anyhow::Result<AuditReport> {
         )
     }
 
-    serde_json::from_slice(stdout).context("Failed to parse npm audit JSON output")
+    serde_json::from_slice(stdout).with_context(|| {
+        format!(
+            "Failed to parse npm audit JSON output {}",
+            String::from_utf8_lossy(stdout)
+        )
+    })
+}
+
+fn run_npm_audit(program: &str) -> anyhow::Result<std::process::Output> {
+    Command::new(program)
+        .args(["audit", "--json"])
+        .output()
+        .context("Failed to execute 'npm audit'. Is npm installed and available in your PATH?")
 }
 
 pub fn run() -> anyhow::Result<AuditReport> {
-    let output = Command::new("npm")
-        .args(["audit", "--json"])
-        .output()
-        .context("Failed to execute 'npm audit'. Is npm installed and available in your PATH?")?;
+    let output = run_npm_audit("npm")?;
 
     let report: AuditReport = parse_report(&output.stdout, &output.stderr)?;
 
@@ -45,5 +54,13 @@ mod tests {
         let result = parse_report(stdout, stderr);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("npm error"));
+    }
+
+    #[test]
+    fn test_run_npm_audit_missing_binary_errors() {
+        let result = run_npm_audit("definitely-not-a-real-binary-xyz");
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Failed to execute"));
     }
 }
