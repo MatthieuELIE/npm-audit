@@ -19,7 +19,7 @@ impl AuditReport {
 
     pub fn sorted_vulnerabilities(&self, min_severity: Option<Severity>) -> Vec<&Vulnerability> {
         let mut filtered = self.filtered_vulnerabilities(min_severity);
-        filtered.sort_by(|a, b| a.severity.cmp(&b.severity));
+        filtered.sort_by_key(|v| v.severity);
 
         filtered
     }
@@ -32,7 +32,6 @@ pub struct Vulnerability {
     pub severity: Severity,
     pub is_direct: DependencyType,
     pub via: Vec<Via>,
-    pub effects: Vec<String>,
     pub range: String,
     pub fix_available: FixAvailable,
 }
@@ -119,7 +118,7 @@ impl Severity {
         }
     }
 
-    pub fn to_colored_string(&self) -> ColoredString {
+    pub fn to_colored_string(self) -> ColoredString {
         let text = self.as_str().to_uppercase().black();
 
         match self {
@@ -171,7 +170,6 @@ mod tests {
             severity,
             is_direct: DependencyType::Direct,
             via: vec![],
-            effects: vec![],
             range: "1.0.0".to_string(),
             fix_available: FixAvailable::Bool(false),
         }
@@ -201,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_vuln_count_from_iter() {
-        let vulns = vec![
+        let vulns = [
             create_vuln("v1", Severity::Low),
             create_vuln("v2", Severity::Moderate),
             create_vuln("v3", Severity::Moderate),
