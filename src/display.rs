@@ -1,4 +1,6 @@
-use crate::models::{FixAvailable, Via, VulnCount, Vulnerability};
+use std::collections::HashMap;
+
+use crate::models::{FixAvailable, OutdatedEntry, Via, VulnCount, Vulnerability};
 use colored::Colorize;
 
 pub fn format_fix(fix: &FixAvailable) -> String {
@@ -7,6 +9,14 @@ pub fn format_fix(fix: &FixAvailable) -> String {
         FixAvailable::Bool(false) => "no fix available".to_string(),
         FixAvailable::Fix(f) => format!("npm install {}@{} (major bump)", f.name, f.version),
     }
+}
+
+fn format_outdated(outdated: &OutdatedEntry) -> String {
+    format!(
+        "installed: {}, latest: {}",
+        outdated.current.as_deref().unwrap_or("unknown"),
+        outdated.latest
+    )
 }
 
 pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
@@ -19,7 +29,7 @@ pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
     )
 }
 
-pub fn print_vulnerability(vuln: &Vulnerability) {
+pub fn print_vulnerability(vuln: &Vulnerability, outdated: &HashMap<String, OutdatedEntry>) {
     println!("{}", format_vulnerability_header(vuln));
 
     for via in &vuln.via {
@@ -32,6 +42,10 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
                 println!(" ├─ • via {}", r);
             }
         }
+    }
+
+    if let Some(entry) = outdated.get(&vuln.name) {
+        println!(" ├─   {}", format_outdated(entry));
     }
 
     println!(" └─ → {}", format_fix(&vuln.fix_available));
@@ -101,5 +115,31 @@ mod tests {
         assert!(result.contains("CRITICAL"));
         assert!(result.contains(">= 4.0.0"));
         assert!(result.contains("direct"));
+    }
+
+    #[test]
+    fn test_format_outdated_with_current() {
+        let entry = OutdatedEntry {
+            current: Some("4.0.0".to_string()),
+            latest: "4.18.1".to_string(),
+        };
+
+        let result = format_outdated(&entry);
+
+        assert!(result.contains("4.0.0"));
+        assert!(result.contains("4.18.1"));
+    }
+
+    #[test]
+    fn test_format_outdated_missing_current_shows_unknown() {
+        let entry = OutdatedEntry {
+            current: None,
+            latest: "4.18.1".to_string(),
+        };
+
+        let result = format_outdated(&entry);
+
+        assert!(result.contains("unknown"));
+        assert!(result.contains("4.18.1"));
     }
 }

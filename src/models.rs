@@ -97,6 +97,12 @@ pub struct Fix {
     pub version: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OutdatedEntry {
+    pub current: Option<String>,
+    pub latest: String,
+}
+
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
