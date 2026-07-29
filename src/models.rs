@@ -159,10 +159,11 @@ impl DependencyType {
 
 impl From<bool> for DependencyType {
     fn from(is_direct: bool) -> Self {
-        match is_direct {
-            true => DependencyType::Direct,
-            false => DependencyType::Indirect,
+        if is_direct {
+            return DependencyType::Direct;
         }
+
+        DependencyType::Indirect
     }
 }
 
