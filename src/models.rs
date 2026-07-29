@@ -97,6 +97,12 @@ pub struct Fix {
     pub version: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OutdatedEntry {
+    pub current: Option<String>,
+    pub latest: String,
+}
+
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
@@ -153,9 +159,10 @@ impl DependencyType {
 
 impl From<bool> for DependencyType {
     fn from(is_direct: bool) -> Self {
-        match is_direct {
-            true => DependencyType::Direct,
-            false => DependencyType::Indirect,
+        if is_direct {
+            DependencyType::Direct
+        } else {
+            DependencyType::Indirect
         }
     }
 }
