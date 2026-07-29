@@ -1,4 +1,4 @@
-use crate::models::{FixAvailable, Metadata, Via, Vulnerability};
+use crate::models::{FixAvailable, Via, VulnCount, Vulnerability};
 use colored::Colorize;
 
 pub fn format_fix(fix: &FixAvailable) -> String {
@@ -38,12 +38,28 @@ pub fn print_vulnerability(vuln: &Vulnerability) {
     println!();
 }
 
-pub fn print_summary(metadata: &Metadata) {
-    let counts = &metadata.vulnerabilities;
+pub fn print_summary(counts: &VulnCount, total: Option<u32>) {
+    let total_text = total
+        .map(|n| format!(" out of {n} total"))
+        .unwrap_or_default();
+
+    let severities = [
+        ("🔴", "Critical", counts.critical),
+        ("🟠", "High", counts.high),
+        ("🟡", "Moderate", counts.moderate),
+        ("🟢", "Low", counts.low),
+    ];
+
+    let result = severities
+        .iter()
+        .filter(|(_emoji, _text, count)| *count > 0)
+        .map(|(emoji, text, count)| format!("{} {} {}", emoji, count, text))
+        .collect::<Vec<String>>()
+        .join(", ");
 
     println!(
-        "Found 🔴 {} Critical, 🟠 {} High, 🟡 {} Moderate, 🟢 {} Low, (Total: {})!\n",
-        counts.critical, counts.high, counts.moderate, counts.low, counts.total
+        "Found {}, (Total: {}{})!\n",
+        result, counts.total, total_text
     );
 }
 

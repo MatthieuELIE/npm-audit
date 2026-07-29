@@ -66,6 +66,24 @@ pub struct VulnCount {
     pub total: u32,
 }
 
+impl<'a> FromIterator<&'a Vulnerability> for VulnCount {
+    fn from_iter<T: IntoIterator<Item = &'a Vulnerability>>(iter: T) -> Self {
+        let mut accumulator = VulnCount::default();
+        for vuln in iter {
+            match vuln.severity {
+                Severity::Info => accumulator.info += 1,
+                Severity::Low => accumulator.low += 1,
+                Severity::Moderate => accumulator.moderate += 1,
+                Severity::High => accumulator.high += 1,
+                Severity::Critical => accumulator.critical += 1,
+            }
+            accumulator.total += 1;
+        }
+
+        accumulator
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Advisory {
     pub title: String,
