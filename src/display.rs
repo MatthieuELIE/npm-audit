@@ -35,6 +35,10 @@ fn format_outdated(outdated: &OutdatedEntry) -> String {
     )
 }
 
+fn format_chain(chain: &[String]) -> String {
+    chain.join(" → ")
+}
+
 pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
     format!(
         "[{}] {} ({}) [{}]",
@@ -45,7 +49,11 @@ pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
     )
 }
 
-pub fn print_vulnerability(vuln: &Vulnerability, outdated: &HashMap<String, OutdatedEntry>) {
+pub fn print_vulnerability(
+    vuln: &Vulnerability,
+    outdated: &HashMap<String, OutdatedEntry>,
+    chains: &HashMap<String, Vec<Vec<String>>>,
+) {
     println!("{}", format_vulnerability_header(vuln));
 
     for via in &vuln.via {
@@ -62,6 +70,14 @@ pub fn print_vulnerability(vuln: &Vulnerability, outdated: &HashMap<String, Outd
 
     if let Some(entry) = outdated.get(&vuln.name) {
         println!(" ├─   {}", format_outdated(entry));
+    }
+
+    if let Some(paths) = chains.get(&vuln.name) {
+        for path in paths {
+            if path.len() > 1 {
+                println!(" ├─   {}", format_chain(path));
+            }
+        }
     }
 
     println!(" └─ → {}", format_fix(&vuln.fix_available));
@@ -157,5 +173,14 @@ mod tests {
 
         assert!(result.contains("unknown"));
         assert!(result.contains("4.18.1"));
+    }
+
+    #[test]
+    fn test_format_chain() {
+        let entry = ["1".to_string(), "2".to_string()];
+
+        let result = format_chain(&entry);
+
+        assert!(result.contains("1 → 2"));
     }
 }
