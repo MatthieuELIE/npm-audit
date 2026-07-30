@@ -66,18 +66,18 @@ pub fn print_vulnerability(
     println!("{}", format_fix_line(&vuln.fix_available));
 
     if let Some(entry) = outdated.get(&vuln.name) {
-        println!("  Outdated: {}", format_outdated(entry));
+        println!("Outdated: {}", format_outdated(entry));
     }
 
     if let Some(paths) = chains.get(&vuln.name) {
         let multi_hop: Vec<&Vec<String>> = paths.iter().filter(|p| p.len() > 1).collect();
         match multi_hop.as_slice() {
             [] => {}
-            [single] => println!("  Path: {}", format_chain(single)),
+            [single] => println!("Path: {}", format_chain(single)),
             multiple => {
-                println!("  Paths:");
+                println!("Paths:");
                 for path in multiple {
-                    println!("    - {}", format_chain(path));
+                    println!("  - {}", format_chain(path));
                 }
             }
         }
@@ -88,12 +88,12 @@ pub fn print_vulnerability(
             Via::Advisory(a) => {
                 println!(
                     "{}",
-                    format!("  Advisory: {} ({})", a.title, a.range).dimmed()
+                    format!("Advisory: {} ({})", a.title, a.range).dimmed()
                 );
-                println!("{}", format!("    {}", a.url).dimmed());
+                println!("{}", format!("  {}", a.url).dimmed());
             }
             Via::Reference(r) => {
-                println!("{}", format!("  Via: {}", r).dimmed());
+                println!("{}", format!("Via: {}", r).dimmed());
             }
         }
     }
