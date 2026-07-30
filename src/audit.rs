@@ -34,28 +34,23 @@ fn parse_outdated(stdout: &[u8]) -> anyhow::Result<HashMap<String, OutdatedEntry
     })
 }
 
-fn run_npm_audit(program: &str) -> anyhow::Result<std::process::Output> {
-    Command::new(program)
-        .args(["audit", "--json"])
-        .output()
-        .context("Failed to execute 'npm audit'. Is npm installed and available in your PATH?")
-}
-
-fn run_npm_outdated(program: &str) -> anyhow::Result<Output> {
-    Command::new(program)
-        .args(["outdated", "--json"])
-        .output()
-        .context("Failed to execute 'npm outdated'. Is npm installed and available in your PATH?")
+fn run_npm(program: &str, args: &[&str]) -> anyhow::Result<Output> {
+    Command::new(program).args(args).output().with_context(|| {
+        format!(
+            "Failed to execute 'npm {}'. Is npm installed and available in your PATH?",
+            args[0]
+        )
+    })
 }
 
 pub fn run() -> anyhow::Result<AuditReport> {
-    let output = run_npm_audit("npm")?;
+    let output = run_npm("npm", &["audit", "--json"])?;
 
     parse_report(&output.stdout, &output.stderr)
 }
 
 pub fn run_outdated() -> anyhow::Result<HashMap<String, OutdatedEntry>> {
-    let output = run_npm_outdated("npm")?;
+    let output = run_npm("npm", &["outdated", "--json"])?;
 
     parse_outdated(&output.stdout)
 }
@@ -84,8 +79,8 @@ mod tests {
     }
 
     #[test]
-    fn test_run_npm_audit_missing_binary_errors() {
-        let result = run_npm_audit("definitely-not-a-real-binary-xyz");
+    fn test_run_npm_missing_binary_errors() {
+        let result = run_npm("definitely-not-a-real-binary-xyz", &["audit", "--json"]);
 
         assert!(result.is_err());
         assert!(
