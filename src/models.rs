@@ -262,7 +262,7 @@ mod tests {
         let names = HashSet::from(["missing".to_string()]);
         let result = tree.collect_chains(&names);
 
-        assert!(result.get("missing").is_none());
+        assert!(!result.contains_key("missing"));
     }
 
     fn create_vuln(name: &str, severity: Severity) -> Vulnerability {
