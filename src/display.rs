@@ -39,6 +39,14 @@ fn format_chain(chain: &[String]) -> String {
     chain.join(" → ")
 }
 
+fn format_fix_line(fix: &FixAvailable) -> ColoredString {
+    let text = format!("Fix: {}", format_fix(fix)).bold();
+    match fix {
+        FixAvailable::Bool(false) => text.red(),
+        _ => text.green(),
+    }
+}
+
 pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
     format!(
         "[{}] {} ({}) [{}]",
@@ -55,32 +63,41 @@ pub fn print_vulnerability(
     chains: &HashMap<String, Vec<Vec<String>>>,
 ) {
     println!("{}", format_vulnerability_header(vuln));
+    println!("{}", format_fix_line(&vuln.fix_available));
+
+    if let Some(entry) = outdated.get(&vuln.name) {
+        println!("Outdated: {}", format_outdated(entry));
+    }
+
+    if let Some(paths) = chains.get(&vuln.name) {
+        let multi_hop: Vec<&Vec<String>> = paths.iter().filter(|p| p.len() > 1).collect();
+        match multi_hop.as_slice() {
+            [] => {}
+            [single] => println!("Path: {}", format_chain(single)),
+            multiple => {
+                println!("Paths:");
+                for path in multiple {
+                    println!("  - {}", format_chain(path));
+                }
+            }
+        }
+    }
 
     for via in &vuln.via {
         match via {
             Via::Advisory(a) => {
-                println!(" ├─ • {} ({})", a.title, a.range.dimmed());
-                println!(" │  └─   {}", a.url);
+                println!(
+                    "{}",
+                    format!("Advisory: {} ({})", a.title, a.range).dimmed()
+                );
+                println!("{}", format!("  {}", a.url).dimmed());
             }
             Via::Reference(r) => {
-                println!(" ├─ • via {}", r);
+                println!("{}", format!("Via: {}", r).dimmed());
             }
         }
     }
 
-    if let Some(entry) = outdated.get(&vuln.name) {
-        println!(" ├─   {}", format_outdated(entry));
-    }
-
-    if let Some(paths) = chains.get(&vuln.name) {
-        for path in paths {
-            if path.len() > 1 {
-                println!(" ├─   {}", format_chain(path));
-            }
-        }
-    }
-
-    println!(" └─ → {}", format_fix(&vuln.fix_available));
     println!();
 }
 
