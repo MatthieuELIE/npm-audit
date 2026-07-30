@@ -9,10 +9,11 @@ _Built while learning Rust, with Claude Code as a pair-programming assistant._
 
 `npm audit`'s default output is fine but its `--json` output is what you
 actually want to build on — except it's unreadable directly. This tool
-shells out to `npm audit --json`, deserializes the (fairly messy) output into
+shells out to `npm audit --json` (plus `npm outdated --json` and `npm ls
+--json` for extra context), deserializes the (fairly messy) output into
 typed Rust structs, and prints something a human can scan in a few seconds:
-severity first, direct vs. transitive dependency, advisory links, and the
-exact fix command to run.
+severity first, the exact fix command, installed/latest versions, the
+dependency chain that pulled the vulnerable package in, and advisory links.
 
 ## Install / run
 
@@ -48,11 +49,22 @@ Example output:
 
 ```
 [CRITICAL] lodash (>= 4.0.0) [direct]
- ├─ • Prototype Pollution in lodash (>= 4.0.0)
- │  └─   https://github.com/advisories/GHSA-xxxx-xxxx-xxxx
- └─ → npm install lodash@4.17.21 (major bump)
+Fix: npm install lodash@4.17.21 (major bump)
+Outdated: installed: 4.0.0, latest: 4.17.21
+Advisory: Prototype Pollution in lodash (>= 4.0.0)
+  https://github.com/advisories/GHSA-xxxx-xxxx-xxxx
 
-Found 🔴 1 Critical, 🟠 0 High, 🟡 0 Moderate, 🟢 0 Low, (Total: 1)!
+Found 🔴 1 Critical, (Total: 1)!
+```
+
+Transitive dependencies also get their pull-in path(s):
+
+```
+[HIGH] semver (< 6.3.1) [indirect]
+Fix: no fix available
+Path: react-scripts → resolve-url-loader → semver
+Advisory: ReDoS in semver (< 6.3.1)
+  https://github.com/advisories/GHSA-xxxx-xxxx-xxxx
 ```
 
 ## Technical notes
@@ -76,8 +88,23 @@ Found 🔴 1 Critical, 🟠 0 High, 🟡 0 Moderate, 🟢 0 Low, (Total: 1)!
 - **No JSON string round-tripping** — `serde_json::from_slice` deserializes
   the command's stdout bytes directly into `AuditReport`, skipping an
   intermediate `String`/`Value` step.
+- **Dependency chains come from `npm ls`, not `npm audit`** — `npm audit`'s
+  own `nodes`/`effects` fields reflect physical install location (hoisted by
+  npm), not the logical require chain, so they're usually a flat, useless
+  path even for indirect dependencies. One `npm ls --all --json` call per run
+  walks the real installed tree instead, and reports every path for a
+  package pulled in more than once (diamond dependencies).
+- **`npm outdated`/`npm ls` failures degrade gracefully** — a missing
+  `node_modules`, desynced lockfile, or non-zero exit from either command
+  just means that run's extra context (installed/latest version, dependency
+  path) is omitted, with a warning on stderr. The audit results themselves
+  never depend on either succeeding.
 
 ## Stack
 
 `clap` (derive) for args, `serde`/`serde_json` for deserialization, `anyhow`
 for error context, `colored` for terminal output.
+
+## License
+
+[MIT](LICENSE)
