@@ -68,7 +68,10 @@ pub fn print_vulnerability(
     for via in &vuln.via {
         match via {
             Via::Advisory(a) => {
-                println!("{}", format!("  Advisory: {} ({})", a.title, a.range).dimmed());
+                println!(
+                    "{}",
+                    format!("  Advisory: {} ({})", a.title, a.range).dimmed()
+                );
                 println!("{}", format!("    {}", a.url).dimmed());
             }
             Via::Reference(r) => {
@@ -78,7 +81,10 @@ pub fn print_vulnerability(
     }
 
     if let Some(entry) = outdated.get(&vuln.name) {
-        println!("{}", format!("  Outdated: {}", format_outdated(entry)).dimmed());
+        println!(
+            "{}",
+            format!("  Outdated: {}", format_outdated(entry)).dimmed()
+        );
     }
 
     if let Some(paths) = chains.get(&vuln.name) {
