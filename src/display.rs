@@ -39,6 +39,14 @@ fn format_chain(chain: &[String]) -> String {
     chain.join(" → ")
 }
 
+fn format_fix_line(fix: &FixAvailable) -> ColoredString {
+    let text = format!("Fix: {}", format_fix(fix)).bold();
+    match fix {
+        FixAvailable::Bool(false) => text.red(),
+        _ => text.green(),
+    }
+}
+
 pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
     format!(
         "[{}] {} ({}) [{}]",
@@ -55,32 +63,38 @@ pub fn print_vulnerability(
     chains: &HashMap<String, Vec<Vec<String>>>,
 ) {
     println!("{}", format_vulnerability_header(vuln));
+    println!("{}", format_fix_line(&vuln.fix_available));
 
     for via in &vuln.via {
         match via {
             Via::Advisory(a) => {
-                println!(" ├─ • {} ({})", a.title, a.range.dimmed());
-                println!(" │  └─   {}", a.url);
+                println!("{}", format!("  Advisory: {} ({})", a.title, a.range).dimmed());
+                println!("{}", format!("    {}", a.url).dimmed());
             }
             Via::Reference(r) => {
-                println!(" ├─ • via {}", r);
+                println!("{}", format!("  Via: {}", r).dimmed());
             }
         }
     }
 
     if let Some(entry) = outdated.get(&vuln.name) {
-        println!(" ├─   {}", format_outdated(entry));
+        println!("{}", format!("  Outdated: {}", format_outdated(entry)).dimmed());
     }
 
     if let Some(paths) = chains.get(&vuln.name) {
-        for path in paths {
-            if path.len() > 1 {
-                println!(" ├─   {}", format_chain(path));
+        let multi_hop: Vec<&Vec<String>> = paths.iter().filter(|p| p.len() > 1).collect();
+        match multi_hop.as_slice() {
+            [] => {}
+            [single] => println!("{}", format!("  Path: {}", format_chain(single)).dimmed()),
+            multiple => {
+                println!("{}", "  Paths:".dimmed());
+                for path in multiple {
+                    println!("{}", format!("    - {}", format_chain(path)).dimmed());
+                }
             }
         }
     }
 
-    println!(" └─ → {}", format_fix(&vuln.fix_available));
     println!();
 }
 
