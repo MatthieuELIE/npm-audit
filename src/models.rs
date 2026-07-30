@@ -1,5 +1,4 @@
 use clap::ValueEnum;
-use colored::{Color, ColoredString, Colorize};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -121,22 +120,6 @@ impl Severity {
             Severity::Moderate => "moderate",
             Severity::High => "high",
             Severity::Critical => "critical",
-        }
-    }
-
-    pub fn to_colored_string(self) -> ColoredString {
-        let text = self.as_str().to_uppercase().black();
-
-        match self {
-            Severity::Critical => text.on_color(Color::Red),
-            Severity::High => text.on_color(Color::TrueColor {
-                r: 255,
-                g: 165,
-                b: 0,
-            }),
-            Severity::Moderate => text.on_color(Color::Yellow),
-            Severity::Low => text.on_color(Color::Green),
-            Severity::Info => text.on_color(Color::Cyan),
         }
     }
 }

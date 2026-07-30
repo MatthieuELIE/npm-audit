@@ -1,7 +1,23 @@
 use std::collections::HashMap;
 
-use crate::models::{FixAvailable, OutdatedEntry, Via, VulnCount, Vulnerability};
-use colored::Colorize;
+use crate::models::{FixAvailable, OutdatedEntry, Severity, Via, VulnCount, Vulnerability};
+use colored::{Color, ColoredString, Colorize};
+
+fn format_severity(severity: Severity) -> ColoredString {
+    let text = severity.as_str().to_uppercase().black();
+
+    match severity {
+        Severity::Critical => text.on_color(Color::Red),
+        Severity::High => text.on_color(Color::TrueColor {
+            r: 255,
+            g: 165,
+            b: 0,
+        }),
+        Severity::Moderate => text.on_color(Color::Yellow),
+        Severity::Low => text.on_color(Color::Green),
+        Severity::Info => text.on_color(Color::Cyan),
+    }
+}
 
 pub fn format_fix(fix: &FixAvailable) -> String {
     match fix {
@@ -22,7 +38,7 @@ fn format_outdated(outdated: &OutdatedEntry) -> String {
 pub fn format_vulnerability_header(vuln: &Vulnerability) -> String {
     format!(
         "[{}] {} ({}) [{}]",
-        vuln.severity.to_colored_string(),
+        format_severity(vuln.severity),
         vuln.name.as_str().bold(),
         vuln.range.dimmed(),
         vuln.is_direct.as_str().cyan(),
