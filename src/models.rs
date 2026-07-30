@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AuditReport {
@@ -102,6 +102,39 @@ pub struct OutdatedEntry {
     pub latest: String,
 }
 
+#[derive(Default, Debug, Deserialize)]
+pub struct DependencyTree {
+    #[serde(default)]
+    pub dependencies: HashMap<String, DependencyTree>,
+}
+
+impl DependencyTree {
+    pub fn collect_chains(&self, names: &HashSet<String>) -> HashMap<String, Vec<Vec<String>>> {
+        let mut result = HashMap::new();
+        let mut path = Vec::new();
+        self.walk(names, &mut path, &mut result);
+
+        result
+    }
+
+    fn walk(
+        &self,
+        names: &HashSet<String>,
+        path: &mut Vec<String>,
+        result: &mut HashMap<String, Vec<Vec<String>>>,
+    ) {
+        for (name, child) in &self.dependencies {
+            path.push(name.clone());
+            if names.contains(name) {
+                result.entry(name.clone()).or_default().push(path.clone());
+            }
+
+            child.walk(names, path, result);
+            path.pop();
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
@@ -153,6 +186,84 @@ impl From<bool> for DependencyType {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn leaf() -> DependencyTree {
+        DependencyTree::default()
+    }
+
+    #[test]
+    fn test_collect_chains_single_chain() {
+        let tree = DependencyTree {
+            dependencies: HashMap::from([(
+                "a".to_string(),
+                DependencyTree {
+                    dependencies: HashMap::from([(
+                        "b".to_string(),
+                        DependencyTree {
+                            dependencies: HashMap::from([("target".to_string(), leaf())]),
+                        },
+                    )]),
+                },
+            )]),
+        };
+
+        let names = HashSet::from(["target".to_string()]);
+        let result = tree.collect_chains(&names);
+
+        assert_eq!(
+            result.get("target").unwrap(),
+            &vec![vec!["a".to_string(), "b".to_string(), "target".to_string()]]
+        );
+    }
+
+    #[test]
+    fn test_collect_chains_diamond_returns_all_paths() {
+        let tree = DependencyTree {
+            dependencies: HashMap::from([(
+                "a".to_string(),
+                DependencyTree {
+                    dependencies: HashMap::from([
+                        (
+                            "b".to_string(),
+                            DependencyTree {
+                                dependencies: HashMap::from([("target".to_string(), leaf())]),
+                            },
+                        ),
+                        (
+                            "c".to_string(),
+                            DependencyTree {
+                                dependencies: HashMap::from([("target".to_string(), leaf())]),
+                            },
+                        ),
+                    ]),
+                },
+            )]),
+        };
+
+        let names = HashSet::from(["target".to_string()]);
+        let mut result = tree.collect_chains(&names).remove("target").unwrap();
+        result.sort();
+
+        let mut expected = vec![
+            vec!["a".to_string(), "b".to_string(), "target".to_string()],
+            vec!["a".to_string(), "c".to_string(), "target".to_string()],
+        ];
+        expected.sort();
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_collect_chains_absent_name_returns_no_entry() {
+        let tree = DependencyTree {
+            dependencies: HashMap::from([("a".to_string(), leaf())]),
+        };
+
+        let names = HashSet::from(["missing".to_string()]);
+        let result = tree.collect_chains(&names);
+
+        assert!(result.get("missing").is_none());
+    }
 
     fn create_vuln(name: &str, severity: Severity) -> Vulnerability {
         Vulnerability {

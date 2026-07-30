@@ -1,4 +1,4 @@
-use crate::models::{AuditReport, OutdatedEntry};
+use crate::models::{AuditReport, DependencyTree, OutdatedEntry};
 use anyhow::Context;
 use std::{
     collections::HashMap,
@@ -34,6 +34,19 @@ fn parse_outdated(stdout: &[u8]) -> anyhow::Result<HashMap<String, OutdatedEntry
     })
 }
 
+fn parse_tree(stdout: &[u8]) -> anyhow::Result<DependencyTree> {
+    if stdout.is_empty() {
+        return Ok(DependencyTree::default());
+    }
+
+    serde_json::from_slice(stdout).with_context(|| {
+        format!(
+            "Failed to parse the dependencies tree {}",
+            String::from_utf8_lossy(stdout)
+        )
+    })
+}
+
 fn run_npm(program: &str, args: &[&str]) -> anyhow::Result<Output> {
     Command::new(program).args(args).output().with_context(|| {
         format!(
@@ -53,6 +66,12 @@ pub fn run_outdated() -> anyhow::Result<HashMap<String, OutdatedEntry>> {
     let output = run_npm("npm", &["outdated", "--json"])?;
 
     parse_outdated(&output.stdout)
+}
+
+pub fn run_tree() -> anyhow::Result<DependencyTree, anyhow::Error> {
+    let output = run_npm("npm", &["ls", "--all", "--json"])?;
+
+    parse_tree(&output.stdout)
 }
 
 #[cfg(test)]
@@ -113,5 +132,44 @@ mod tests {
 
         assert_eq!(result.get("lodash").unwrap().current, None);
         assert_eq!(result.get("lodash").unwrap().latest, "4.18.1");
+    }
+
+    #[test]
+    fn test_parse_tree_empty_stdout_returns_default_tree() {
+        let result = parse_tree(b"");
+
+        assert!(result.unwrap().dependencies.is_empty());
+    }
+
+    #[test]
+    fn test_parse_tree_invalid_json_is_err() {
+        let result = parse_tree(b"not json");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_tree_nested_example() {
+        let stdout = br#"{
+            "dependencies": {
+                "eslint": {
+                    "version": "8.0.0",
+                    "dependencies": {
+                        "minimatch": {
+                            "version": "3.0.0"
+                        }
+                    }
+                }
+            }
+        }"#;
+
+        let result = parse_tree(stdout).unwrap();
+
+        assert!(result.dependencies.contains_key("eslint"));
+        assert!(
+            result.dependencies["eslint"]
+                .dependencies
+                .contains_key("minimatch")
+        );
     }
 }
